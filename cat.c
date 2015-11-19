@@ -49,9 +49,9 @@ main(int argc, char *argv[])
     close(fd);
   }
   ////////////debag
-  struct procstat *stat = malloc(32);
+  struct procstat *stat = malloc(sizeof(struct procstat));
   int ret =  pstat(3, stat);
-  printf(1,"log:: isWork-> %d\n ",ret);
+  printf(1,"log:: pstat- isWork-> %d; ",ret);
   printf(1,"name: ");  printf(1,"%s ",stat->name);
   printf(1,"state: "); printf(1,"%d ",stat->state);
   printf(1,"sz: "); printf(1,"%d ",stat->sz);

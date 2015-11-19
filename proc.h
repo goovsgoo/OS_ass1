@@ -1,5 +1,6 @@
 // Segments in proc->gdt.
 #define NSEGS     7
+#include "jobs.h"
 
 // Per-CPU state
 struct cpu {
@@ -80,6 +81,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int exit_status;		//Process exit status
+  struct job* job;				//Job under which process is running
 };
 
 // Process memory is laid out contiguously, low addresses first:

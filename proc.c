@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "jobs.h"
 
 struct {
   struct spinlock lock;
@@ -175,8 +176,6 @@ exit(int status)
 {
   struct proc *p;
   int fd;
-   cprintf("log::exit func: ");			//for debug
-   cprintf("%d\n",status);			//for debug
    proc->exit_status = status;			//save the exit state in the PCB
   if(proc == initproc)
     panic("init exiting");
@@ -232,8 +231,6 @@ wait(int *status)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-    	  //char pidPrint = p->pid;
-	cprintf("log::wait func - ZOMBIE:\n"); //cprintf("%d\n", pidPrint);		//for debug
         pid = p->pid;
 	if (status != 0)				//If status address existe otherwise written to NULL
 	  *status = p->exit_status;			//Return the terminated child exit status through the status argument
@@ -476,6 +473,8 @@ procdump(void)
   }
 }
 
+
+/////// 1.5 system call which will return (via variable stat) information regarding the process with a given pid.
 int
 pstat(int pid, struct procstat *stat)
 {
@@ -485,10 +484,15 @@ pstat(int pid, struct procstat *stat)
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->pid == pid) {
 				int i;
-				for (i=0; i<sizeof(p->name); i++){
-				stat->name[i]=p->name[i];
-				}
-				stat->nofile=sizeof(p->ofile);
+				for (i=0; i<sizeof(p->name); i++)
+					stat->name[i]=p->name[i];
+
+				int numFileOpen=0;
+				for(i = 0; i < NOFILE; i++){
+					if(p->ofile[i])
+						 numFileOpen++;
+				 }
+				stat->nofile=numFileOpen;
 				stat->state=p->state;
 				stat->sz=p->sz;
 				release(&ptable.lock);
@@ -498,3 +502,45 @@ pstat(int pid, struct procstat *stat)
 		release(&ptable.lock);
 		return -1;
  }
+
+
+//////jobs////////
+
+
+int attachjob(int pid, struct job* job) {
+	struct proc *p;
+	acquire(&ptable.lock);
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->pid == pid) {
+			p->job = job;
+			release(&ptable.lock);
+			return pid;
+		}
+	}
+	release(&ptable.lock);
+	return -1;
+}
+
+int
+getjob(int index){
+	cprintf("i'm here\n");
+	return index;
+}
+
+int
+printjob(int jid) {
+	struct proc *p;
+	int count = 0;
+	acquire(&ptable.lock);
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->job->jid == jid) {
+			if (!count)
+				cprintf("Job %d: %s\n", jid, p->job->cmd);
+			cprintf("%d: %s\n", p->pid, p->name);
+			++count;
+		}
+	}
+	release(&ptable.lock);
+	return count;
+}
+

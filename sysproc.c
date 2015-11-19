@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "jobs.h"
 
 int
 sys_fork(void)
@@ -106,6 +107,22 @@ sys_pstat(void) {
 		  return -1;
 
 	int ret = pstat(pid, (struct procstat *)stat);
-	cprintf("log::system pstat for: %d",pid);	cprintf("\n");			//for debug
 	return ret;
+}
+
+int
+sys_attachjob(void) {
+	int pid;
+	int job;
+	if (argint(0, &pid) < 0 || argint(1, &job) < 0)
+		return -1;
+	return attachjob(pid, (struct job*) job);
+}
+
+int
+sys_printjob(void) {
+	int jid;
+	if (argint(0, &jid) < 0)
+		return -1;
+	return printjob(jid);
 }

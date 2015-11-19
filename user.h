@@ -1,6 +1,7 @@
 struct stat;
 struct rtcdate;
 struct procstat;
+struct job;
 
 // system calls
 int fork(void);
@@ -25,6 +26,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int pstat(int pid, struct procstat *stat);
+int attachjob(int pid, struct job* job);
+void advanceprocstats(void);
 
 // ulib.c
 int stat(char*, struct stat*);
