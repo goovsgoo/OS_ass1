@@ -37,7 +37,7 @@ swtch:
 //new func - implicit_exit
 implicit_exit:
   //pushl %eax			//?????
-  //pushl %eax
+  pushl %eax
   movl $SYS_exit, %eax
   int $T_SYSCALL
 end_of_exit:

@@ -533,16 +533,20 @@ getjob(int index){
 
 int
 printjob(int jid) {
+	//struct procstat *stat = 0; // free mem alcc??????
 	struct proc *p;
 	int count = 0;
+
+
 	acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-		//cprintf("log# *printjob* pid:%d,jobID:%d \n", p->pid, jid);
 		if(p->job->jid == jid) {
-
 			if (!count)
 				cprintf("Job %d: %s\n", jid, p->job->cmd);
-			cprintf("%d: %s\n", p->pid, p->name);
+			//cprintf("%d: \n",pstat(1,stat));
+			//if(pstat(p->pid,stat))
+				cprintf("%d: \n",p->pid);
+				//cprintf("%d: %s %d %d %d\n",p->pid ,stat->name, stat->sz,stat->nofile,stat->state);
 			++count;
 		}
 	}
