@@ -81,5 +81,12 @@ main(int argc, char *argv[])
   }
   for(i=1; i<argc; i++)
     ls(argv[i]);
+
+  /////////////////////////
+  //struct procstat *stat=0;
+  //int ret = pstat(1, stat);
+  //printf(1,"/d",ret);		//for debug
+  ///////////////////////////////////
+
   exit(0);
 }

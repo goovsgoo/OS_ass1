@@ -95,3 +95,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_pstat(void) {
+	struct procstat *stat=0;
+	int pid;
+	  if (argint(0, &pid) < 0)
+		  return -1;
+	  if(argptr(1, (char**)&stat, 4) < 0)
+		  return -1;
+
+	int ret = pstat(pid, (struct procstat *)stat);
+	cprintf("log::system pstat for: %d",pid);	cprintf("\n");			//for debug
+	return ret;
+}

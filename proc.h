@@ -49,7 +49,20 @@ struct context {
   uint eip;
 };
 
+
+
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+// system call which will return (via variable stat) information regarding the process with a given pid.
+//The returned information is defined by
+struct procstat {
+char name[16]; // process name
+uint sz; // size of memory
+uint nofile; // amount of open file descriptors
+enum procstate state; // process state
+};
+
 
 // Per-process state
 struct proc {

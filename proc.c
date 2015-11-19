@@ -232,7 +232,8 @@ wait(int *status)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-	cprintf("log::wait func found one ZOMBIE ");				//for debug
+    	  //char pidPrint = p->pid;
+	cprintf("log::wait func - ZOMBIE:\n"); //cprintf("%d\n", pidPrint);		//for debug
         pid = p->pid;
 	if (status != 0)				//If status address existe otherwise written to NULL
 	  *status = p->exit_status;			//Return the terminated child exit status through the status argument
@@ -474,3 +475,26 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int
+pstat(int pid, struct procstat *stat)
+{
+	struct proc *p;
+
+		acquire(&ptable.lock);
+		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			if(p->pid == pid) {
+				int i;
+				for (i=0; i<sizeof(p->name); i++){
+				stat->name[i]=p->name[i];
+				}
+				stat->nofile=sizeof(p->ofile);
+				stat->state=p->state;
+				stat->sz=p->sz;
+				release(&ptable.lock);
+				return 0;
+			}
+		}
+		release(&ptable.lock);
+		return -1;
+ }

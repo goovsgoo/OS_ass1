@@ -4,6 +4,19 @@
 
 char buf[512];
 
+///////////////////debag
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+// system call which will return (via variable stat) information regarding the process with a given pid.
+//The returned information is defined by
+struct procstat {
+char name[16]; // process name
+uint sz; // size of memory
+uint nofile; // amount of open file descriptors
+enum procstate state; // process state
+};
+////////
+
 void
 cat(int fd)
 {
@@ -35,5 +48,15 @@ main(int argc, char *argv[])
     cat(fd);
     close(fd);
   }
+  ////////////debag
+  struct procstat *stat = malloc(32);
+  int ret =  pstat(3, stat);
+  printf(1,"log:: isWork-> %d\n ",ret);
+  printf(1,"name: ");  printf(1,"%s ",stat->name);
+  printf(1,"state: "); printf(1,"%d ",stat->state);
+  printf(1,"sz: "); printf(1,"%d ",stat->sz);
+  printf(1,"nofile: "); printf(1," %d\n ",stat->nofile);
+
+  //////////////
   exit(0);
 }
