@@ -160,6 +160,12 @@ main(void)
   }
   
   // Read and run input commands.
+  int jobcntr = 0;
+  struct joblist* jlist;
+  jlist = malloc(sizeof(*jlist));
+  jlist->first = 0;
+  jlist->last = 0;
+
   while(getcmd(buf, sizeof(buf)) >= 0){
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Clumsy but will have to do for now.
@@ -169,8 +175,54 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
-      runcmd(parsecmd(buf));
+
+
+
+    if(buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b' && buf[3] == 's' && (buf[4] == '\n' || buf[4] == ' ')){
+    	struct job* job = jlist->first;
+    	while (job != 0) {
+    		//printf(1, "jobID:%d.\n",job->jid);
+			if (!printjob(job->jid)) { //no processes - delete job.
+				if (jlist->first == job && jlist->last == job)
+					jlist->first = 0;
+				if (jlist->first == job)
+					jlist->first = job->next;
+				if (jlist->last == job)
+					jlist->last = job->prev;
+				if (job->prev)
+					job->prev->next = job->next;
+				if (job->next)
+					job->next->prev = job->prev;
+			}
+			job = job->next;
+		}
+		if (!jlist->first)
+			printf(1, "There are no jobs.\n");
+		continue;
+	}
+
+    struct job* job;
+	job = malloc(sizeof(*job));
+	memset(job, 0, sizeof(*job));
+	job->jid = ++jobcntr;
+
+	char* s = job->cmd;
+	char* t = buf;
+	int i = sizeof(buf);
+	while(--i > 0 && *t != '\n' && (*s++ = *t++) != 0) ;
+	*s = 0;
+	if(fork1() == 0) {
+		attachjob(getpid(), job);
+		runcmd(parsecmd(buf));
+	}
+	if (jlist->first == 0) {
+		jlist->first = job;
+		jlist->last = job;
+	} else {
+		job->prev = jlist->last;
+		jlist->last->next = job;
+		jlist->last = job;
+	}
     wait(&status);
   }
   exit(0);

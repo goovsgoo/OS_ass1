@@ -146,6 +146,7 @@ fork(void)
   }
   np->sz = proc->sz;
   np->parent = proc;
+  np->job = proc->job;
   *np->tf = *proc->tf;
 
   // Clear %eax so that fork returns 0 in the child.
@@ -246,7 +247,7 @@ wait(int *status)
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
-				//p->job = 0;  // for Part 2!
+		p->job = 0;
         release(&ptable.lock);
         return pid;
       }
@@ -425,6 +426,7 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
+      p->job = 0;
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
@@ -509,6 +511,7 @@ pstat(int pid, struct procstat *stat)
 
 int attachjob(int pid, struct job* job) {
 	struct proc *p;
+	cprintf("log# *attachjob* pid:%d,jobID:%d \n", pid, job->jid);
 	acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		if(p->pid == pid) {
@@ -533,7 +536,9 @@ printjob(int jid) {
 	int count = 0;
 	acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		//cprintf("log# *printjob* pid:%d,jobID:%d \n", p->pid, jid);
 		if(p->job->jid == jid) {
+
 			if (!count)
 				cprintf("Job %d: %s\n", jid, p->job->cmd);
 			cprintf("%d: %s\n", p->pid, p->name);

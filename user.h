@@ -26,6 +26,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int pstat(int pid, struct procstat *stat);
+int printjob(int jid);
 int attachjob(int pid, struct job* job);
 void advanceprocstats(void);
 
