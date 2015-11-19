@@ -137,6 +137,7 @@ fork(void)
   if((np = allocproc()) == 0)
     return -1;
 
+
   // Copy process state from p.
   if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
     kfree(np->kstack);
