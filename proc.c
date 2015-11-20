@@ -482,7 +482,6 @@ int
 pstat(int pid, struct procstat *stat)
 {
 	struct proc *p;
-
 		acquire(&ptable.lock);
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->pid == pid) {
@@ -533,7 +532,6 @@ getjob(int index){
 
 int
 printjob(int jid) {
-	//struct procstat *stat = 0; // free mem alcc??????
 	struct proc *p;
 	int count = 0;
 
@@ -543,12 +541,24 @@ printjob(int jid) {
 		if(p->job->jid == jid) {
 			if (!count)
 				cprintf("Job %d: %s\n", jid, p->job->cmd);
-			//cprintf("%d: \n",pstat(1,stat));
-			//if(pstat(p->pid,stat))
-				cprintf("%d: \n",p->pid);
-				//cprintf("%d: %s %d %d %d\n",p->pid ,stat->name, stat->sz,stat->nofile,stat->state);
+			int numFileOpen=0;
+			int i;
+			for(i = 0; i < NOFILE; i++){
+				if(p->ofile[i])
+					 numFileOpen++;
+			}
+			char* statusPrint;
+			switch(p->state){
+			  case 0:  statusPrint = "UNUSED"; break;
+			  case 1:  statusPrint = "EMBRYO"; break;
+			  case 2:  statusPrint ="SLEEPING"; break;
+			  case 3:  statusPrint ="RUNNABLE"; break;
+			  case 4:  statusPrint ="RUNNING"; break;
+			  case 5:  statusPrint ="ZOMBIE"; break;
+			}
+			cprintf("%d: %s %d %d %s \n",p->pid,p->name,p->sz,numFileOpen,statusPrint);
 			++count;
-		}
+			}
 	}
 	release(&ptable.lock);
 	return count;
@@ -565,6 +575,7 @@ waitpid(int pid, int *status, int options)
 		// Scan through table looking for zombie pid.
 		procexists = 0;
 		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			cprintf("log:: *waitpid* %d: %s \n",p->pid,p->name);
 			if(p->pid != pid)
 				continue;
 			procexists = 1;
@@ -588,17 +599,17 @@ waitpid(int pid, int *status, int options)
 				p->job = 0;
 				release(&ptable.lock);
 				return pid;
-			}// else {
-				//if (options)
-					//goto waitonp;
-			//}
+			} else {
+				if (options)
+					goto waitonp;
+			}
 		}
 // No point waiting if process doesn't exist.
 		if(!procexists || proc->killed || !options){
 			release(&ptable.lock);
 			return -1;
 		}
-	//	waitonp:
+		waitonp:
 		// Wait for children to exit.  (See wakeup1 call in proc_exit.)
 	//	if (options) {// if BLOCKING
 		//	int i;
@@ -608,7 +619,7 @@ waitpid(int pid, int *status, int options)
 				//	break;
 			//	}
 
-			sleep(proc, &ptable.lock);  //DOC: wait-sleep
+		sleep(proc, &ptable.lock);  //DOC: wait-sleep
 		}
 	}
 
