@@ -123,6 +123,8 @@ void            yield(void);
 int 			pstat(int pid, struct procstat *stat);
 int				printjob(int jid);
 int				attachjob(int pid, struct job* job);
+int				fg(int jid);
+int waitpid(int pid, int* status, int options);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

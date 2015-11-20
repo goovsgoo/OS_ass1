@@ -40,7 +40,7 @@ forktest(void)
   int status;			//for wait func
 
   printf(1, "fork test\n");
-  2f:	c7 44 24 04 68 04 00 	movl   $0x468,0x4(%esp)
+  2f:	c7 44 24 04 78 04 00 	movl   $0x478,0x4(%esp)
   36:	00 
   37:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   3e:	e8 bd ff ff ff       	call   0 <printf>
@@ -82,7 +82,7 @@ forktest(void)
     printf(1, "fork claimed to work N times!\n", N);
   84:	c7 44 24 08 e8 03 00 	movl   $0x3e8,0x8(%esp)
   8b:	00 
-  8c:	c7 44 24 04 74 04 00 	movl   $0x474,0x4(%esp)
+  8c:	c7 44 24 04 84 04 00 	movl   $0x484,0x4(%esp)
   93:	00 
   94:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   9b:	e8 60 ff ff ff       	call   0 <printf>
@@ -100,7 +100,7 @@ forktest(void)
   b9:	85 c0                	test   %eax,%eax
   bb:	79 20                	jns    dd <forktest+0xb4>
       printf(1, "wait stopped early\n");
-  bd:	c7 44 24 04 93 04 00 	movl   $0x493,0x4(%esp)
+  bd:	c7 44 24 04 a3 04 00 	movl   $0x4a3,0x4(%esp)
   c4:	00 
   c5:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   cc:	e8 2f ff ff ff       	call   0 <printf>
@@ -128,7 +128,7 @@ forktest(void)
   f2:	83 f8 ff             	cmp    $0xffffffff,%eax
   f5:	74 20                	je     117 <forktest+0xee>
     printf(1, "wait got too many\n");
-  f7:	c7 44 24 04 a7 04 00 	movl   $0x4a7,0x4(%esp)
+  f7:	c7 44 24 04 b7 04 00 	movl   $0x4b7,0x4(%esp)
   fe:	00 
   ff:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  106:	e8 f5 fe ff ff       	call   0 <printf>
@@ -138,7 +138,7 @@ forktest(void)
   }
   
   printf(1, "fork test OK\n");
- 117:	c7 44 24 04 ba 04 00 	movl   $0x4ba,0x4(%esp)
+ 117:	c7 44 24 04 ca 04 00 	movl   $0x4ca,0x4(%esp)
  11e:	00 
  11f:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  126:	e8 d5 fe ff ff       	call   0 <printf>
@@ -712,3 +712,15 @@ SYSCALL(attachjob)
  45f:	b8 18 00 00 00       	mov    $0x18,%eax
  464:	cd 40                	int    $0x40
  466:	c3                   	ret    
+
+00000467 <fg>:
+SYSCALL (fg)
+ 467:	b8 19 00 00 00       	mov    $0x19,%eax
+ 46c:	cd 40                	int    $0x40
+ 46e:	c3                   	ret    
+
+0000046f <waitpid>:
+SYSCALL(waitpid)
+ 46f:	b8 1a 00 00 00       	mov    $0x1a,%eax
+ 474:	cd 40                	int    $0x40
+ 476:	c3                   	ret    

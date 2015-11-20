@@ -554,3 +554,83 @@ printjob(int jid) {
 	return count;
 }
 
+int
+waitpid(int pid, int *status, int options)
+{
+	struct proc *p;
+	int procexists;
+
+	acquire(&ptable.lock);
+	for(;;){
+		// Scan through table looking for zombie pid.
+		procexists = 0;
+		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			if(p->pid != pid)
+				continue;
+			procexists = 1;
+			if(p->state == ZOMBIE){
+				// Found one.
+				//
+				if (status != 0)
+					*status = p->exit_status;
+				else {
+					release(&ptable.lock);
+					return -1;
+				}
+				kfree(p->kstack);
+				p->kstack = 0;
+				freevm(p->pgdir);
+				p->state = UNUSED;
+				p->pid = 0;
+				p->parent = 0;
+				p->name[0] = 0;
+				p->killed = 0;
+				p->job = 0;
+				release(&ptable.lock);
+				return pid;
+			}// else {
+				//if (options)
+					//goto waitonp;
+			//}
+		}
+// No point waiting if process doesn't exist.
+		if(!procexists || proc->killed || !options){
+			release(&ptable.lock);
+			return -1;
+		}
+	//	waitonp:
+		// Wait for children to exit.  (See wakeup1 call in proc_exit.)
+	//	if (options) {// if BLOCKING
+		//	int i;
+			//for (i = 0 ; i < 64 ; i++)
+				//if (!p->waitingonme[i]){
+					//p->waitingonme[i] = proc;
+				//	break;
+			//	}
+
+			sleep(proc, &ptable.lock);  //DOC: wait-sleep
+		}
+	}
+
+int fg(int jid) {
+	struct proc *p;
+	int status;
+	int found = 0;
+	acquire(&ptable.lock);
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if (p->pid < 3)
+			continue;
+		if(!jid)
+			jid = p->job->jid;
+		if(p->job->jid == jid) {
+			found = 1;
+			release(&ptable.lock);
+			waitpid(p->pid, &status, 1);
+			acquire(&ptable.lock);
+		}
+	}
+	release(&ptable.lock);
+	if (found)
+		fg(jid);
+	return 0;
+}

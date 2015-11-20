@@ -201,6 +201,20 @@ main(void)
 		continue;
 	}
 
+    if(buf[0] == 'f' && buf[1] == 'g' && (buf[2] == '\n' || buf[2] == ' ')){
+    			char* c = &buf[2];
+    			while (*c == ' ')
+    				++c;
+    			int jid = 0;
+    			while (*c != ' ' && *c != '\n'){
+    				jid = jid*10;
+    				jid += (int)*c - 48;
+    				++c;
+    			}
+    			fg(jid);
+    			continue;
+    		}
+
     struct job* job;
 	job = malloc(sizeof(*job));
 	memset(job, 0, sizeof(*job));

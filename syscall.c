@@ -101,6 +101,8 @@ extern int sys_uptime(void);
 extern int sys_pstat(void);		//new for 1.5
 extern int sys_printjob(void);
 extern int sys_attachjob(void);
+extern int sys_fg(void);
+extern int sys_waitpid(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,6 +129,8 @@ static int (*syscalls[])(void) = {
 [SYS_pstat]   sys_pstat,
 [SYS_printjob] sys_printjob,
 [SYS_attachjob] sys_attachjob,
+[SYS_fg] sys_fg,
+[SYS_waitpid] sys_waitpid,
 };
 
 void

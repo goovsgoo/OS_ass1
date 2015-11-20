@@ -126,3 +126,24 @@ sys_printjob(void) {
 		return -1;
 	return printjob(jid);
 }
+
+int
+sys_fg(void) {
+	int jid;
+	if (argint(0, &jid) < 0)
+		return -1;
+	return fg(jid);
+}
+
+
+int
+sys_waitpid(void)
+{
+	int pid;
+	int status;
+	int options;
+
+	if ( (argint(0, &pid) < 0) | (argint(1, &status) < 0) | (argint(2, &options) < 0) )
+		return -1;
+	return waitpid(pid, (int*)status, options);
+}
