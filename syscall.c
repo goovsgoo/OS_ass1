@@ -23,6 +23,7 @@ fetchint(uint addr, int *ip)
   return 0;
 }
 
+
 // Fetch the nul-terminated string at addr from the current process.
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
