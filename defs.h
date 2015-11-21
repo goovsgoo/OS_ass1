@@ -120,11 +120,11 @@ void            userinit(void);
 int             wait(int *status);
 void            wakeup(void*);
 void            yield(void);
-int 			pstat(int pid, struct procstat *stat);
-int				printjob(int jid);
-int				attachjob(int pid, struct job* job);
-int				fg(int jid);
-int waitpid(int pid, int* status, int options);
+int 		pstat(int pid, struct procstat *stat);
+int		printjob(int jid);
+int		attachjob(int pid, struct job* job);
+int		fg(int jid);
+int 		waitpid(int pid, int* status);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -8,6 +8,8 @@
 
 struct job {
 	int jid;
+	int fd;
+	int isFG;
 	char cmd[64];
 	struct job* next;
 	struct job* prev;

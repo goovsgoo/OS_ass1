@@ -53,6 +53,10 @@ struct backcmd {
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
+void removeJobFromList(struct joblist* list, struct job* job);
+
+int jobs_pipe[2];
+char childBuf[100];
 
 // Execute cmd.  Never returns.
 void
@@ -75,6 +79,10 @@ runcmd(struct cmd *cmd)
 
   case EXEC:
     ecmd = (struct execcmd*)cmd;
+    
+    //read(0, childBuf, 100);
+    //printf(1, "executing command %s\n", childBuf);
+    
     if(ecmd->argv[0] == 0)
       exit(0);
     exec(ecmd->argv[0], ecmd->argv);
@@ -165,81 +173,114 @@ main(void)
   jlist = malloc(sizeof(*jlist));
   jlist->first = 0;
   jlist->last = 0;
-
+	  
   while(getcmd(buf, sizeof(buf)) >= 0){
-    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Clumsy but will have to do for now.
-      // Chdir has no effect on the parent if run in the child.
-      buf[strlen(buf)-1] = 0;  // chop \n
-      if(chdir(buf+3) < 0)
-        printf(2, "cannot cd %s\n", buf+3);
-      continue;
+      if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
+	// Clumsy but will have to do for now.
+	// Chdir has no effect on the parent if run in the child.
+	buf[strlen(buf)-1] = 0;  // chop \n
+	if(chdir(buf+3) < 0)
+	  printf(2, "cannot cd %s\n", buf+3);
+	continue;
+      }
+
+      if(buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b' && buf[3] == 's' && (buf[4] == '\n' || buf[4] == ' ')){
+	  struct job* job = jlist->first;
+	  while (job != 0) {
+	      if (!printjob(job->jid)) { //no processes - delete job.
+		  close(job->fd);
+		  free(job);
+		  removeJobFromList(jlist, job);		    
+	      }
+	      job = job->next;
+	  }
+	  if (!jlist->first)
+		  printf(1, "There are no jobs.\n");
+	  continue;
+      }
+
+      if(buf[0] == 'f' && buf[1] == 'g' && (buf[2] == '\n' || buf[2] == ' ')){
+	  char* c = &buf[2];
+	  while (*c == ' ')
+		  ++c;
+	  int jid = atoi(c);
+	  fg(jid);
+	  continue;
+      }
+
+      // 0x0A - new line
+      if (buf[0] != 0x0A ) { 
+	
+	  // create a pipe so the the shell sends the input to jobs_pipe[1] and the new process gets it in jobs_pipe[0]
+	  if (pipe(jobs_pipe) == -1) {
+	      panic("pipe");
+	  }
+	  
+	  struct job* job;
+	  job = malloc(sizeof(*job));
+	  memset(job, 0, sizeof(*job));
+	  job->jid = ++jobcntr;
+	  job->fd = jobs_pipe[1];
+	  
+	  //char* s = job->cmd;
+	  //char* t = buf;
+	  //int i = sizeof(buf);
+	  //while(--i > 0 && *t != '\n' && (*s++ = *t++) != 0) ;
+	  //*s = 0;
+
+	  
+
+	  struct cmd* command = parsecmd(buf);
+	  int childPid = fork1();
+	  if(childPid == 0) {
+	      close(0);	      
+	      dup(jobs_pipe[0]);
+	      close(jobs_pipe[1]);
+	      
+	      //char childBuf[100];
+	      //read(jobs_pipe[1], childBuf, 100);
+	      runcmd(command);
+	  }
+	  
+	  attachjob(childPid, job);
+		      
+	  // shell writes the input to job_buffer ONLY IF the cmd isn't a backgraound job
+	  //if (command->type != BACK) {
+	  //  write(jobs_pipe[1], buf, 100);
+	  //}
+	  //else {
+	  //  write(jobs_pipe[1], "garbage", 100);
+	  //}
+	  
+	  //close(jobs_pipe[1]);
+	  //close(jobs_pipe[0]);
+	  
+	  if (jlist->first == 0) {
+		  jlist->first = job;
+		  jlist->last = job;
+	  } else {
+		  job->prev = jlist->last;
+		  jlist->last->next = job;
+		  jlist->last = job;
+	  }
+	wait(&status);
+      }
     }
+    exit(0);
+}
 
-
-
-    if(buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b' && buf[3] == 's' && (buf[4] == '\n' || buf[4] == ' ')){
-    	struct job* job = jlist->first;
-    	while (job != 0) {
-    		//printf(1, "jobID:%d.\n",job->jid);
-			if (!printjob(job->jid)) { //no processes - delete job.
-				if (jlist->first == job && jlist->last == job)
-					jlist->first = 0;
-				if (jlist->first == job)
-					jlist->first = job->next;
-				if (jlist->last == job)
-					jlist->last = job->prev;
-				if (job->prev)
-					job->prev->next = job->next;
-				if (job->next)
-					job->next->prev = job->prev;
-			}
-			job = job->next;
-		}
-		if (!jlist->first)
-			printf(1, "There are no jobs.\n");
-		continue;
-	}
-
-    if(buf[0] == 'f' && buf[1] == 'g' && (buf[2] == '\n' || buf[2] == ' ')){
-    			char* c = &buf[2];
-    			while (*c == ' ')
-    				++c;
-    			int jid = 0;
-    			while (*c != ' ' && *c != '\n'){
-    				jid = jid*10;
-    				jid += (int)*c - 48;
-    				++c;
-    			}
-    			fg(jid);
-    			continue;
-    		}
-
-    struct job* job;
-	job = malloc(sizeof(*job));
-	memset(job, 0, sizeof(*job));
-	job->jid = ++jobcntr;
-
-	char* s = job->cmd;
-	char* t = buf;
-	int i = sizeof(buf);
-	while(--i > 0 && *t != '\n' && (*s++ = *t++) != 0) ;
-	*s = 0;
-	if(fork1() == 0) {
-		attachjob(getpid(), job);
-		runcmd(parsecmd(buf));
-	}
-	if (jlist->first == 0) {
-		jlist->first = job;
-		jlist->last = job;
-	} else {
-		job->prev = jlist->last;
-		jlist->last->next = job;
-		jlist->last = job;
-	}
-    wait(&status);
-  }
-  exit(0);
+void removeJobFromList(struct joblist* jlist, struct job* job)
+{  
+    if (jlist->first == job && jlist->last == job)
+	    jlist->first = 0;
+    if (jlist->first == job)
+	    jlist->first = job->next;
+    if (jlist->last == job)
+	    jlist->last = job->prev;
+    if (job->prev)
+	    job->prev->next = job->next;
+    if (job->next)
+	    job->next->prev = job->prev;
 }
 
 void
