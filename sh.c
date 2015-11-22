@@ -50,10 +50,18 @@ struct backcmd {
   struct cmd *cmd;
 };
 
+///////////////////////
+// Function defenitions
+///////////////////////
+
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
 void removeJobFromList(struct joblist* list, struct job* job);
+void addJobToList(struct joblist* jlist, struct job* job);
+void clearFinishedJobs(struct joblist* jlist);
+
+///////////////////////
 
 int jobs_pipe[2];
 char childBuf[100];
@@ -85,8 +93,12 @@ runcmd(struct cmd *cmd)
     
     if(ecmd->argv[0] == 0)
       exit(0);
-    exec(ecmd->argv[0], ecmd->argv);
-    printf(2, "exec %s failed\n", ecmd->argv[0]);
+    
+    if(fork1() == 0) {
+      exec(ecmd->argv[0], ecmd->argv);
+      printf(2, "exec %s failed\n", ecmd->argv[0]);
+      exit(-1);
+    }    
     exit(-1);
     break;
 
@@ -142,14 +154,21 @@ runcmd(struct cmd *cmd)
 }
 
 int
-getcmd(char *buf, int nbuf)
+getcmd(char *buf, int nbuf, int bPrintDollar)
 {
-  printf(2, "$ ");
+  if (bPrintDollar) {
+    printf(2, "$ ");
+  }
+  
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
   if(buf[0] == 0) // EOF
     return -1;
-  return 0;
+  
+  char *t = buf;
+  while (*t++ != '\0');
+  
+  return t - buf - 1;
 }
 
 int
@@ -157,7 +176,7 @@ main(void)
 {
   static char buf[100];
   int fd;
-  int status;
+  //int status;
   
   // Assumes three file descriptors open.
   while((fd = open("console", O_RDWR)) >= 0){
@@ -173,9 +192,25 @@ main(void)
   jlist = malloc(sizeof(*jlist));
   jlist->first = 0;
   jlist->last = 0;
+  jlist->fgJob = 0;
+  
+  int waitStatus;
+  int bPrintDollar = 1;
+  int cmdLen = 0;
+  while((cmdLen = getcmd(buf, sizeof(buf), bPrintDollar)) >= 0){
+
+      clearFinishedJobs(jlist);
 	  
-  while(getcmd(buf, sizeof(buf)) >= 0){
-      if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
+      // Check if there's a forground job running. 
+      // If so - the shell should not function, but only transfer the data received from the console to the job's pipe
+      if (jlist->fgJob != 0) {
+	  bPrintDollar = 0;
+	  write(jlist->fgJob->fd, buf, cmdLen);
+	  continue;
+      }
+      bPrintDollar = 1;
+      
+      if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
 	// Clumsy but will have to do for now.
 	// Chdir has no effect on the parent if run in the child.
 	buf[strlen(buf)-1] = 0;  // chop \n
@@ -184,14 +219,10 @@ main(void)
 	continue;
       }
 
-      if(buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b' && buf[3] == 's' && (buf[4] == '\n' || buf[4] == ' ')){
+      if(buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b' && buf[3] == 's' && (buf[4] == '\n' || buf[4] == ' ')) {
 	  struct job* job = jlist->first;
 	  while (job != 0) {
-	      if (!printjob(job->jid)) { //no processes - delete job.
-		  close(job->fd);
-		  free(job);
-		  removeJobFromList(jlist, job);		    
-	      }
+	      printjob(job->jid);
 	      job = job->next;
 	  }
 	  if (!jlist->first)
@@ -199,12 +230,17 @@ main(void)
 	  continue;
       }
 
-      if(buf[0] == 'f' && buf[1] == 'g' && (buf[2] == '\n' || buf[2] == ' ')){
-	  char* c = &buf[2];
-	  while (*c == ' ')
-		  ++c;
+      if(buf[0] == 'f' && buf[1] == 'g' && (buf[2] == '\n' || buf[2] == ' ')) {
+	  char* c = &buf[3];
+
 	  int jid = atoi(c);
-	  fg(jid);
+
+	  struct job* j = jlist->first;
+	  while ( j->jid != jid && j != 0) {
+	      j = j->next;
+	  }
+	  jlist->fgJob = j;
+	  //fg(jid);
 	  continue;
       }
 
@@ -214,7 +250,7 @@ main(void)
 	  // create a pipe so the the shell sends the input to jobs_pipe[1] and the new process gets it in jobs_pipe[0]
 	  if (pipe(jobs_pipe) == -1) {
 	      panic("pipe");
-	  }
+	  }	  
 	  
 	  struct job* job;
 	  job = malloc(sizeof(*job));
@@ -236,47 +272,64 @@ main(void)
 	      close(0);	      
 	      dup(jobs_pipe[0]);
 	      close(jobs_pipe[1]);
-	      
-	      //char childBuf[100];
-	      //read(jobs_pipe[1], childBuf, 100);
 	      runcmd(command);
 	  }
+	  close(jobs_pipe[0]); // The shell doesn't need the READ end.
 	  
-	  attachjob(childPid, job);
+	  attachjob(childPid, job); // Attach proc to job (Sys call)
 		      
 	  // shell writes the input to job_buffer ONLY IF the cmd isn't a backgraound job
-	  //if (command->type != BACK) {
-	  //  write(jobs_pipe[1], buf, 100);
-	  //}
-	  //else {
-	  //  write(jobs_pipe[1], "garbage", 100);
-	  //}
-	  
-	  //close(jobs_pipe[1]);
-	  //close(jobs_pipe[0]);
-	  
-	  if (jlist->first == 0) {
-		  jlist->first = job;
-		  jlist->last = job;
-	  } else {
-		  job->prev = jlist->last;
-		  jlist->last->next = job;
-		  jlist->last = job;
+	  if (command->type != BACK) {
+	      jlist->fgJob = job;
+	      bPrintDollar = 0;
 	  }
-	wait(&status);
+	  
+	  addJobToList(jlist, job);
+	  
+	  wait(&waitStatus);
       }
     }
     exit(0);
 }
 
+
+void clearFinishedJobs(struct joblist* jlist) {
+    struct job* job = jlist->first;
+    while (job != 0) {
+	if (isJobEmpty(job->jid) == 1) { //no processes - delete job.
+	    close(job->fd);
+	    free(job);
+	    removeJobFromList(jlist, job);		    
+	}
+	job = job->next;
+    }  
+}
+
+void addJobToList(struct joblist* jlist, struct job* job)
+{
+    if (jlist->first == 0) {
+	    jlist->first = job;
+	    jlist->last = job;
+    } 
+    else {
+	    job->prev = jlist->last;
+	    jlist->last->next = job;
+	    jlist->last = job;
+    }
+}
+
 void removeJobFromList(struct joblist* jlist, struct job* job)
 {  
+    if (jlist->fgJob == job)
+	jlist->fgJob = 0;
+    
     if (jlist->first == job && jlist->last == job)
 	    jlist->first = 0;
     if (jlist->first == job)
 	    jlist->first = job->next;
     if (jlist->last == job)
 	    jlist->last = job->prev;
+    
     if (job->prev)
 	    job->prev->next = job->next;
     if (job->next)

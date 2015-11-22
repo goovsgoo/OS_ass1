@@ -229,15 +229,13 @@ waitpid(int childPid, int *status)
 {
     struct proc *p;
     int havekids, pid;
-    cprintf("I am process %d, wating for my child %d\n", proc->pid, childPid);
+    //cprintf("I am process %d, wating for my child %d\n", proc->pid, childPid);
     acquire(&ptable.lock);
     for(;;){
       // Scan through table looking for zombie children.
       havekids = 0;
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-	if(childPid == -1 && p->parent != proc) {
-	  if (p->pid > 0)
-	    //cprintf("I am proc %d, proc %d is not my child\n", proc->pid, p->pid);
+	if(p->parent != proc) {
 	  continue;
 	}
 	if (childPid != -1 && childPid != p->pid) {
@@ -277,7 +275,7 @@ waitpid(int childPid, int *status)
       //cprintf("waiting...\n");
       // Wait for children to exit.  (See wakeup1 call in proc_exit.)
       sleep(proc, &ptable.lock);  //DOC: wait-sleep
-      cprintf("finished waiting\n");
+      //cprintf("finished waiting\n");
     }    
 }
 
@@ -521,8 +519,9 @@ pstat(int pid, struct procstat *stat)
  }
 
 
-//////jobs////////
-
+//////////////////////
+// Jobs Sys calls
+//////////////////////
 
 int attachjob(int pid, struct job* job) {
 	struct proc *p;
@@ -540,9 +539,24 @@ int attachjob(int pid, struct job* job) {
 }
 
 int
-getjob(int index){
+getjob(int index) {
 	cprintf("i'm here\n");
 	return index;
+}
+
+int 
+isJobEmpty(int jid) {
+	struct proc *p;
+
+	acquire(&ptable.lock);
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->job->jid == jid) {
+		    release(&ptable.lock);
+		    return 0;
+		}
+	}
+	release(&ptable.lock);
+	return 1;
 }
 
 int

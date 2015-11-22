@@ -27,6 +27,7 @@ int sleep(int);
 int uptime(void);
 int pstat(int pid, struct procstat *stat);
 int printjob(int jid);
+int isJobEmpty(int jid);
 int attachjob(int pid, struct job* job);
 int fg(int jid);
 int waitpid(int pid, int* status, int options);

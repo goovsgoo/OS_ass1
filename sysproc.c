@@ -120,6 +120,14 @@ sys_attachjob(void) {
 }
 
 int
+sys_isJobEmpty(void) {
+	int jid;
+	if (argint(0, &jid) < 0)
+		return -1;
+	return isJobEmpty(jid);
+}
+
+int
 sys_printjob(void) {
 	int jid;
 	if (argint(0, &jid) < 0)

@@ -23,5 +23,6 @@
 #define SYS_pstat  22
 #define SYS_printjob  23
 #define SYS_attachjob  24
-#define SYS_fg 25
-#define SYS_waitpid 26
+#define SYS_isJobEmpty  25
+#define SYS_fg 26
+#define SYS_waitpid 27
