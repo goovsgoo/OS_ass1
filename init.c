@@ -33,6 +33,6 @@ main(void)
       exit(-1);
     }
     while((wpid=wait(&status)) >= 0 && wpid != pid)
-      printf(1, "zombie!\n");
+      printf(1, "zombie! is %d\n", wpid);
   }
 }

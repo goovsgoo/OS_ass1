@@ -65,7 +65,8 @@ void clearFinishedJobs(struct joblist* jlist);
 
 int jobs_pipe[2];
 char childBuf[100];
-
+struct joblist* jlist;
+  
 // Execute cmd.  Never returns.
 void
 runcmd(struct cmd *cmd)
@@ -94,11 +95,8 @@ runcmd(struct cmd *cmd)
     if(ecmd->argv[0] == 0)
       exit(0);
     
-    if(fork1() == 0) {
-      exec(ecmd->argv[0], ecmd->argv);
-      printf(2, "exec %s failed\n", ecmd->argv[0]);
-      exit(-1);
-    }    
+    exec(ecmd->argv[0], ecmd->argv);
+    printf(2, "exec %s failed\n", ecmd->argv[0]);  
     exit(-1);
     break;
 
@@ -146,8 +144,7 @@ runcmd(struct cmd *cmd)
     
   case BACK:
     bcmd = (struct backcmd*)cmd;
-    if(fork1() == 0)
-      runcmd(bcmd->cmd);
+    runcmd(bcmd->cmd);
     break;
   }
   exit(0);
@@ -162,9 +159,14 @@ getcmd(char *buf, int nbuf, int bPrintDollar)
   
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
-  if(buf[0] == 0) // EOF
-    return -1;
   
+  if (buf[0] == 0 && jlist->fgJob != 0) {
+      close(jlist->fgJob->fd);
+  }
+  else if (buf[0] == 0) {
+    return -1;
+  }
+      
   char *t = buf;
   while (*t++ != '\0');
   
@@ -188,7 +190,6 @@ main(void)
   
   // Read and run input commands.
   int jobcntr = 0;
-  struct joblist* jlist;
   jlist = malloc(sizeof(*jlist));
   jlist->first = 0;
   jlist->last = 0;
@@ -200,7 +201,7 @@ main(void)
   while((cmdLen = getcmd(buf, sizeof(buf), bPrintDollar)) >= 0){
 
       clearFinishedJobs(jlist);
-	  
+	
       // Check if there's a forground job running. 
       // If so - the shell should not function, but only transfer the data received from the console to the job's pipe
       if (jlist->fgJob != 0) {
@@ -268,11 +269,13 @@ main(void)
 
 	  struct cmd* command = parsecmd(buf);
 	  int childPid = fork1();
-	  if(childPid == 0) {
+	  if(childPid == 0) {	    
 	      close(0);	      
 	      dup(jobs_pipe[0]);
 	      close(jobs_pipe[1]);
-	      runcmd(command);
+	      if(fork1() == 0)
+		  runcmd(command);
+	      exit(0);
 	  }
 	  close(jobs_pipe[0]); // The shell doesn't need the READ end.
 	  

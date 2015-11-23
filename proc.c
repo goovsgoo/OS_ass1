@@ -525,7 +525,7 @@ pstat(int pid, struct procstat *stat)
 
 int attachjob(int pid, struct job* job) {
 	struct proc *p;
-	cprintf("log# *attachjob* pid:%d,jobID:%d \n", pid, job->jid);
+	//cprintf("log# *attachjob* pid:%d,jobID:%d \n", pid, job->jid);
 	acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		if(p->pid == pid) {
