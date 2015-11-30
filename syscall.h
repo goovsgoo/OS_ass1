@@ -26,3 +26,4 @@
 #define SYS_isJobEmpty  25
 #define SYS_fg 26
 #define SYS_waitpid 27
+#define SYS_signal 28

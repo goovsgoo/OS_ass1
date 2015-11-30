@@ -154,3 +154,14 @@ sys_waitpid(void)
 		return -1;
 	return waitpid(pid, (int*)status);
 }
+
+int
+sys_signal(void)
+{
+	int signum;
+	int handler;
+
+	if ( (argint(0, &signum) < 0) | (argint(1, &handler) < 0) )
+		return -1;
+	return signal(signum, (sighandler_t)handler);
+}

@@ -609,3 +609,16 @@ int fg(int jid) {
 	release(&ptable.lock);
 	return 0;
 }
+
+int 
+signal(int signum, sighandler_t handler) {
+	sighandler_t retHandler;
+	if (signum >= 32 || signum < 0) {
+	    return -1;
+	}
+	else {	
+	    retHandler =  proc->signal_handlers[signum];
+	    proc->signal_handlers[signum] = handler;
+	}
+	return (int)retHandler;
+}

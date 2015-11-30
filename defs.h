@@ -126,6 +126,7 @@ int		attachjob(int pid, struct job* job);
 int		isJobEmpty(int jid);
 int		fg(int jid);
 int 		waitpid(int pid, int* status);
+int 		signal(int signum, sighandler_t handler);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

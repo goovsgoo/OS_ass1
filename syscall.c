@@ -106,6 +106,7 @@ extern int sys_attachjob(void);
 extern int sys_isJobEmpty(void);
 extern int sys_fg(void);
 extern int sys_waitpid(void);
+extern int sys_signal(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -133,8 +134,9 @@ static int (*syscalls[])(void) = {
 [SYS_printjob] sys_printjob,
 [SYS_attachjob] sys_attachjob,
 [SYS_isJobEmpty] sys_isJobEmpty,
-[SYS_fg] sys_fg,
+[SYS_fg]      sys_fg,
 [SYS_waitpid] sys_waitpid,
+[SYS_signal]  sys_signal,
 };
 
 void

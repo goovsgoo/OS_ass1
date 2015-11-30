@@ -162,6 +162,7 @@ getcmd(char *buf, int nbuf, int bPrintDollar)
   
   if (buf[0] == 0 && jlist->fgJob != 0) {
       close(jlist->fgJob->fd);
+      jlist->fgJob = 0;
   }
   else if (buf[0] == 0) {
     return -1;

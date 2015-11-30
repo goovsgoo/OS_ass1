@@ -25,12 +25,15 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+
+// new system calls
 int pstat(int pid, struct procstat *stat);
 int printjob(int jid);
 int isJobEmpty(int jid);
 int attachjob(int pid, struct job* job);
 int fg(int jid);
 int waitpid(int pid, int* status, int options);
+sighandler_t signal(int signum, sighandler_t handler);
 
 // ulib.c
 int stat(char*, struct stat*);
