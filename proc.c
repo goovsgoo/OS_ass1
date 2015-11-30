@@ -18,7 +18,7 @@ static struct proc *initproc;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
-static void wakeup1(void *chan);
+static void wakeup1(void *chan); 
 
 void
 pinit(void)
